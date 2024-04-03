@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Res, Req, ParseIntPipe, NotFoundException, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Res, Req, ParseIntPipe, NotFoundException, UseGuards, UnauthorizedException, BadRequestException, HttpStatus } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SignUpUserDto } from './dto/user-signup.dto';
@@ -73,6 +73,21 @@ export class UsersController {
   async update(@Body() updateUserDto: UpdateUserDto, @CurrentUser() currentUser:User,):Promise<User> {
     const user = currentUser;
     return await this.usersService.update(updateUserDto, currentUser);
+  }
+
+  @Get('user')
+  async user(@Req() request: Request) {
+    try{
+      const token_access = request.headers.authorization.replace('Bearer ', '');
+      const decodedToken = jwt.verify(token_access, process.env.TOKEN_ACCESS_SECRET_KEY) as { id: string };
+      console.log('Decoded Token:', decodedToken); // Afficher le token décodé dans la console
+      const userId = parseInt(decodedToken.id, 10); // Convertir l'ID en nombre
+      const user = await this.usersService.findOne(userId);
+      return user;
+    }catch(error){
+        throw new UnauthorizedException();
+    }
+    
   }
 
   @Post('refresh')
