@@ -81,9 +81,8 @@ export class UsersController {
     try{
       const token_access = request.headers.authorization.replace('Bearer ', '');
       const decodedToken = jwt.verify(token_access, process.env.TOKEN_ACCESS_SECRET_KEY) as { id: string };
-      const userId = parseInt(decodedToken.id, 10);
-      const user = await this.usersService.findOne(userId);
-      return user;
+      const {password, ...data} = await this.usersService.findOne(parseInt(decodedToken.id));
+      return data;
     }catch(error){
         throw new UnauthorizedException();
     }
@@ -109,10 +108,8 @@ export class UsersController {
   async logout(@Req() request: Request, @Res({passthrough: true}) response: Response) {
     const refreshToken = request.cookies['refresh_token'];
     await this.tokenService.delete({ token: refreshToken });
-
     // Supprimer le cookie de rafraîchissement
     response.clearCookie('refresh_token');
-
     // Retourner un message de réussite
     return { message: 'Logout successful' };
   }
