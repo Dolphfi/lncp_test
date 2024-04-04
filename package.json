@@ -40,11 +40,14 @@
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.6",
     "jsonwebtoken": "^9.0.2",
+    "mysql": "^2.18.1",
     "mysql2": "^3.9.2",
     "nodemailer": "^6.9.13",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.20"
+    "serverless-mysql": "^1.5.5",
+    "typeorm": "^0.3.20",
+    "typeorm-aurora-data-api-driver": "^2.4.4"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

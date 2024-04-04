@@ -13,6 +13,7 @@ import { AuthorizeGuard } from 'src/utility/guards/authorization.guard';
 import * as jwt from 'jsonwebtoken';
 import { TokenService } from './token.service';
 import { MoreThanOrEqual } from 'typeorm';
+import { log } from 'console';
 
 
 @Controller('users')
@@ -75,13 +76,12 @@ export class UsersController {
     return await this.usersService.update(updateUserDto, currentUser);
   }
 
-  @Get('user')
+  @Get('user/in')
   async user(@Req() request: Request) {
     try{
       const token_access = request.headers.authorization.replace('Bearer ', '');
       const decodedToken = jwt.verify(token_access, process.env.TOKEN_ACCESS_SECRET_KEY) as { id: string };
-      console.log('Decoded Token:', decodedToken); // Afficher le token décodé dans la console
-      const userId = parseInt(decodedToken.id, 10); // Convertir l'ID en nombre
+      const userId = parseInt(decodedToken.id, 10);
       const user = await this.usersService.findOne(userId);
       return user;
     }catch(error){
@@ -92,21 +92,16 @@ export class UsersController {
 
   @Post('refresh')
   async refresh(@Req() request: Request, @Res({passthrough: true}) response: Response){
-    const refreshToken = request.cookies['refresh_token'];
-      if (!refreshToken) {
-        throw new UnauthorizedException('Refresh token is missing');
-      }
+    try {
+      const refreshToken = request.cookies['refresh_token'];
       const decodedToken = jwt.verify(refreshToken, process.env.TOKEN_ACCESS_SECRET_KEY) as { id: string; username: string };
       const user = await this.usersService.findOne(parseInt(decodedToken.id, 10));
-      const tokenEntity = await this.tokenService.findOne({
-        user_id: user.id,
-        expiredAt: MoreThanOrEqual(new Date())
-      });
-      if(!tokenEntity){
-        throw new UnauthorizedException('Refresh token is invalid');
-      }
-      const newAccessToken = jwt.sign({ id: user.id, username: user.username }, process.env.TOKEN_ACCESS_SECRET_KEY, { expiresIn: '30s' });
+      const newAccessToken = jwt.sign({ id: user.id}, process.env.TOKEN_ACCESS_SECRET_KEY, { expiresIn: '30s' });
       return { token_access: newAccessToken };
+    } catch (error) {
+      throw new UnauthorizedException();
+    }
+    
 
   }
 
@@ -114,8 +109,11 @@ export class UsersController {
   async logout(@Req() request: Request, @Res({passthrough: true}) response: Response) {
     const refreshToken = request.cookies['refresh_token'];
     await this.tokenService.delete({ token: refreshToken });
-    
+
+    // Supprimer le cookie de rafraîchissement
     response.clearCookie('refresh_token');
+
+    // Retourner un message de réussite
     return { message: 'Logout successful' };
   }
 
